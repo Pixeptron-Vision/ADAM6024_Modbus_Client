@@ -1,0 +1,12 @@
+# depslib dependency file v1.0
+1592292073 source:c:\users\197364\documents\my vision\cpp\modbus_client\main.cpp
+	<iostream>
+	<winsock2.h>
+	<chrono>
+	<thread>
+
+1593339331 source:c:\users\197364\documents\my vision\cpp\modbus_client\main2.cpp
+	<winsock.h>
+	<stdio.h>
+	<conio.h>
+

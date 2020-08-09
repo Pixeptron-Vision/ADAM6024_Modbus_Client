@@ -1,0 +1,152 @@
+#include <winsock.h>
+#include <stdio.h>
+#include <conio.h>
+
+//int _tmain(int argc, char **argv)
+  // test1.cpp 5/23/97
+// example Win32 C++ program to read registers from PLC via gateway
+// compile with BC45 or BC50
+// default settings for Win32 console app
+// empty DEF file
+int main()
+{
+	//printf("usage: test1 ip_adrs unit reg_no num_regs\n"
+	// "eg test1 198.202.138.72 5 0 10\n");
+char ip_adrs[] = "192.168.51.235";
+unsigned short unit = 0;//*(short*)(argv[2]);
+unsigned short reg_no = 17;
+unsigned short num_regs =0x0000;
+unsigned short fn_code = 5;
+printf("ip_adrs = %s unit = %d reg_no = %d num_regs = %d\n",ip_adrs, unit, reg_no, num_regs);
+// initialize WinSock
+static WSADATA wd;
+if (WSAStartup(0x0101, &wd))
+{
+	printf("cannot initialize WinSock\n");
+	return 1;
+}
+// set up socket
+SOCKET s;
+s = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
+struct sockaddr_in server;
+server.sin_family = AF_INET;
+server.sin_port = htons(502); // ASA standard port
+server.sin_addr.s_addr = inet_addr(ip_adrs);
+int i;
+i = connect(s, (sockaddr *)&server, sizeof(sockaddr_in));
+if (i<0) // #define SOCKET_ERROR            (-1)
+{
+	printf("connect - error %d\n",WSAGetLastError());
+	closesocket(s);
+	WSACleanup();
+	return 1;
+}
+fd_set fds;//typedef struct fd_set {
+           // u_int   fd_count;               /* how many are SET? */
+           //SOCKET  fd_array[FD_SETSIZE];   /* an array of SOCKETs */
+           //} fd_set;
+FD_ZERO(&fds);//#define FD_ZERO(set) (((fd_set FAR *)(set))->fd_count=0)
+timeval tv;	//struct timeval {
+			//		long    tv_sec;         /* seconds */
+			//		long    tv_usec;        /* and microseconds */
+			//};
+tv.tv_sec = 5;
+tv.tv_usec = 0;
+// wait for permission to send
+FD_SET(s, &fds);//#define FD_SET(fd, set) do { \
+				//	if (((fd_set FAR *)(set))->fd_count < FD_SETSIZE) \
+				//		((fd_set FAR *)(set))->fd_array[((fd_set FAR *)(set))->fd_count++]=(fd);\
+				//} while(0)
+				//此处将s赋给fds，使fds的成员fd_count＝1，fd_array[0]=s;
+i = select(32, NULL, &fds, NULL, &tv); // write
+			//多路复用——select()//功能：用来检测一个或多个套接字状态。
+			//格式：int PASCAL FAR select(int nfds,fd_set FAR * readfds,fd_set FAR * writefds,
+			//fd_set FAR * exceptfds(//指向要检测是否出错的指针),const struct timeval FAR * timeout);
+if (i<=0)
+{
+	printf("select - error %d\n",WSAGetLastError());
+	closesocket(s);
+	WSACleanup();
+	return 1;
+}
+// build request of form 0 0 0 0 0 6 ui 3 rr rr nn nn
+unsigned char obuf[261];
+unsigned char ibuf[261];
+obuf[0] = 0;
+obuf[1] = 0;
+obuf[2] = 0;
+obuf[3] = 0;
+obuf[4] = 0;//Length byte-1
+obuf[5] = 6;//Length byte-2
+obuf[6] = unit;//Unit Identifier(slave address)
+obuf[7] = fn_code;//Function code6
+obuf[8] = reg_no >> 8;//The upper eight bits of the starting address of the read register
+obuf[9] = reg_no & 0xff;//Read the lower eight bits of the starting address of the register
+obuf[10] = num_regs >> 8;//The upper eight bits of the number of read registers
+obuf[11] = num_regs & 0xff;//The lower eight bits of the number of read registers
+// send request
+for(int count=0;count<1;count++){
+    i = send(s, (const char *)obuf, 12, 0);//int PASCAL FAR send (
+                                             //IN SOCKET s,
+                                             //IN const char FAR * buf,
+                                             //IN int len,
+                                             //IN int flags);
+    if (i<12)
+    {
+        printf("failed to send all 12 chars\n");
+    }
+    //wait for response
+    FD_SET(s, &fds);
+    i = select(32, &fds, NULL, NULL, &tv); //read
+    if (i<=0)
+    {
+        printf("no TCP response received\n");
+        closesocket(s);
+        WSACleanup();
+        return 1;
+    }
+    // read response
+    i = recv(s, ( char*)ibuf, 261, 0);
+    printf("Response Size : %d\n",i);
+for (size_t j=0;j<12;j++) printf("%d ",obuf[j]);
+printf("\n");
+for (size_t j=0;j<12;j++) printf("%d ",ibuf[j]);
+printf("\n");
+}
+
+if (i<9)
+{
+	if (i==0)
+	{
+		printf("unexpected close of connection at remote end\n");
+	}
+	else
+	{
+		printf("response was too short - %d chars\n", i);
+	}
+}
+else if (ibuf[7] & 0x80)
+{
+	printf("Modbus exception response - type %d\n", ibuf[8]);
+}
+//else if (i != (9+2*num_regs))
+//{
+//	printf("incorrect response size is %d expected %d\n",i,(9+2*num_regs));
+//}
+else
+{
+	for (i=0;i<ibuf[5];i++)
+	{
+		unsigned short w = (ibuf[9+i+i]<<8) + ibuf[10+i+i];
+		printf("word %d = %d\n", i, w);
+	}
+}
+// close down
+printf("close down\n");
+closesocket(s);
+WSACleanup();
+return 0;
+}
+
+
+
