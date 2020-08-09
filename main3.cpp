@@ -206,7 +206,33 @@ int main()
 {
     bool commandResponse;
     socketInitStatus = ADAM_init();
-    usleep(300000); // 300 ms
+    commandResponse = COMMAND(DO_0,DO_WRITE,SET);
+    commandResponse = COMMAND(DO_1,DO_WRITE,SET);
+    usleep(100000); // 100 ms
+    commandResponse = COMMAND(DO_0,DO_WRITE,RESET);
+    commandResponse = COMMAND(DO_1,DO_WRITE,RESET);
+    // close down
+    usleep(100000); // 100 ms
+    commandResponse = COMMAND(DO_0,DO_WRITE,SET);
+    commandResponse = COMMAND(DO_1,DO_WRITE,SET);
+    usleep(100000); // 100 ms
+    commandResponse = COMMAND(DO_0,DO_WRITE,RESET);
+    commandResponse = COMMAND(DO_1,DO_WRITE,RESET);
+    // close down
+    usleep(100000); // 100 ms
+//    commandResponse = COMMAND(DO_0,DO_WRITE,SET);
+//    commandResponse = COMMAND(DO_1,DO_WRITE,SET);
+//    usleep(100000); // 100 ms
+//    commandResponse = COMMAND(DO_0,DO_WRITE,RESET);
+//    commandResponse = COMMAND(DO_1,DO_WRITE,RESET);
+    printf("close down\n");
+    closesocket(s);
+    WSACleanup();
+return 0;
+}
+
+
+/*
     commandResponse = COMMAND(DI_ALL,DI_READ,NO_OF_REGISTERS);
     printf(" DI0:%d ,DI1:%d ; DO0:%d ,DO1:%d \n",DI0,DI1,DO0,DO1);
     commandResponse = COMMAND(DO_0,DO_WRITE,SET);
@@ -221,12 +247,4 @@ int main()
     commandResponse = COMMAND(DO_1,DO_WRITE,RESET);
     commandResponse = COMMAND(DO_ALL,DO_READ,NO_OF_REGISTERS);
     printf(" DI0:%d ,DI1:%d ; DO0:%d ,DO1:%d \n",DI0,DI1,DO0,DO1);
-    // close down
-    printf("close down\n");
-    closesocket(s);
-    WSACleanup();
-return 0;
-}
-
-
-
+*/

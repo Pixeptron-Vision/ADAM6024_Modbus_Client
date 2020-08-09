@@ -10,3 +10,9 @@
 	<stdio.h>
 	<conio.h>
 
+1596976654 source:c:\users\administrator\documents\adam6024_modbus_client\main3.cpp
+	<winsock.h>
+	<stdio.h>
+	<conio.h>
+	<unistd.h>
+
